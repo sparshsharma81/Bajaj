@@ -11,15 +11,16 @@ app.use(express.json());
 
 const EMAIL = process.env.OFFICIAL_EMAIL;
 
-// ---------- Utility Functions ----------
+// all the functions 
 
-function errorResponse(res, status, message) {
-  return res.status(status).json({
-    is_success: false,
-    official_email: EMAIL,
-    error: message
-  });
-}
+
+        function errorResponse(res, status, message) {
+        return res.status(status).json({
+            is_success: false,
+            official_email: EMAIL,
+            error: message
+        });
+        }
 
 
 
@@ -32,9 +33,10 @@ function errorResponse(res, status, message) {
                             }
 
 
-function lcm(a, b) {
-  return Math.abs(a * b) / gcd(a, b);
-}
+        function lcm(a, b) {
+        if (a === 0 || b === 0) return 0;
+        return Math.abs(a * b) / gcd(a, b);
+        }
 
 // This is the health -- GET/HEATH ENPOINT......
 
@@ -48,14 +50,16 @@ app.get("/health", (req, res) => {
 // THIS IS THE POST / bfhl enpoint which iss suppsoed to handle the keys........
  
 
+
+
 app.post("/bfhl", async (req, res) => {
   try {
-          const keys =   Object.keys(req.body);
+               const keys =   Object.keys(req.body);
 
     //ye hai 1 key...
-    if (keys.length !== 1) {
-      return errorResponse(res, 400, "Exactly one input is required");
-    }
+            if (keys.length !== 1) {
+            return errorResponse(res, 400, "Exactly one input is required");
+            }
 
     const key =   keys[0];
     const value = req.body[key];
@@ -64,19 +68,32 @@ app.post("/bfhl", async (req, res) => {
 
 
     switch (key) {
+
       case "fibonacci":
                         if (!Number.isInteger(value) || value < 0) {
                     return errorResponse(res, 400, "Invalid fibonacci input");
                     }
+
+
+        if (value === 0) {
+          data = [];
+          break;
+        }
+
+
         data = [];
 
 
+        
         for (let i = 0; i < value; i++) {
                         if (i === 0) data.push(0);
                         else if (i === 1) data.push(1);
                         else data.push(data[i - 1] + data[i - 2]);
         }
         break;
+
+
+
 
       case "prime":
                     if (!Array.isArray(value)) {
@@ -98,51 +115,45 @@ app.post("/bfhl", async (req, res) => {
 
           return true;
         });
-        break;
 
+
+        data = [...new Set(data)];
+        break;
 
 
 
       case "lcm":
+                if (!Array.isArray(value) || value.length === 0) {
+                return errorResponse(res, 400, "LCM input must be non empty....");
+                }
 
-        if (!Array.isArray(value) || value.length === 0) {
+                if (!value.every(n => Number.isInteger(n))) {
+                return errorResponse(res, 400, "All values must be integers");
+                }
 
-
-          return errorResponse(res, 400, "LCM input must be non empty....");
-        }
-
-
-
-        data = value.reduce((acc, n) => {
-                            if (!Number.isInteger(n)) throw new Error("the number is invalid.....");
-                            return lcm(acc, n);
-        });
-        break;
-
-                     case "hcf":
-                        if (!Array.isArray(value) || value.length === 0) {
-                        return errorResponse(res, 400, "HCF input must be a non empty array.../..");
-                        }
-
-
-
-
-
-        data = value.reduce((acc, n) => {
-          if (!Number.isInteger(n)) throw new Error("The number is Invaid....");
-          return gcd(acc, n);
-        });
+             data = value.reduce((acc, n) => lcm(acc, n));
         break;
 
 
 
-                        case "AI":
+      case "hcf":
+                if (!Array.isArray(value) || value.length === 0) {
+                return errorResponse(res, 400, "HCF input must be a non empty array.../..");
+                }
+
+                if (!value.every(n => Number.isInteger(n))) {
+                return errorResponse(res, 400, "All values must be integers");
+                }
+
+         data = value.reduce((acc, n) => gcd(acc, n));
+         break;
+
+
+        
+      case "AI":
                         if (typeof value !== "string" || value.trim() === "") {
                             return errorResponse(res, 400, "AI input must be a string");
                         }
-
-
-
 
 
   const aiRes = await axios.post(
@@ -168,27 +179,25 @@ Question: ${value}`
   let raw =
     aiRes.data.candidates?.[0]?.content?.parts?.[0]?.text || "Unknown";
 
-  // Hard sanitize (final safety net)
   data = raw
     .trim()
-    .replace(/[^A-Za-z0-9]/g, "")   
-    .split(/\s+/)[0];              
+    .split(/\s+/)[0]
+    .replace(/[^A-Za-z0-9]/g, "");
 
   break;
 
-
-      default:
-        return errorResponse(res, 400, "Unsupported key");
+            default:
+                return errorResponse(res, 400, "Unsupported key");
     }
 
 
 
 
-    return res.status(200).json({
-      is_success: true,
-      official_email: EMAIL,
-      data
-    });
+        return res.status(200).json({
+        is_success: true,
+        official_email: EMAIL,
+        data
+        });
 
 
   } catch (err) {
@@ -197,7 +206,7 @@ Question: ${value}`
   }
 });
 
-// ---------- Start Server ----------
+// now we are done...we are starting the server...
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
